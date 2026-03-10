@@ -1,0 +1,13 @@
+.{
+    .name = .watchface_example,
+    .version = "0.0.1",
+    .dependencies = .{
+        .pebble_sdk = .{
+            .url = "..",
+            .hash = "pebble_sdk-0.0.1-rN96oFqcAACk3D3HXRgfpI6WGPUvrjh63iWGU3qgxKrl",
+        },
+    },
+    .minimum_zig_version = "0.15.2",
+    .paths = .{""},
+    .fingerprint = 0x371b1d9e2ef4a393,
+}

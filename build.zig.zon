@@ -1,0 +1,13 @@
+.{
+    .name = .pebble_sdk,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.2",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+        "CHANGELOG.md",
+    },
+    .fingerprint = 0xbd1c3b9da07adfac,
+}
