@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) !void {
 with the `uuidgen` command.
 
 `targetPlatforms` specifies the [Pebble
-platforms](https://developer.rebble.io/guides/tools-and-resources/hardware-information/)
+platforms](https://developer.repebble.com/guides/tools-and-resources/hardware-information/)
 the watchface will be built for. In this case: `emery` (Pebble Time 2) and
 `gabbro` (Pebble Round 2).
 
@@ -126,7 +126,7 @@ The `ld.lld: warning: address (0x82) of section .note.gnu.build-id is not a
 multiple of alignment (4)` warning can be safely ignored.
 
 The resulting `zig-out/watchface_example.pbw` can be installed to a Pebble
-watch or published to the [Pebble appstore](https://developer.rebble.io/guides/appstore-publishing/).
+watch or published to the or [Pebble](https://appstore-api.repebble.com/dashboard) or [Rebble](https://developer.rebble.io/guides/appstore-publishing/) app store.
 
 **Emulate the Pebble application:**
 
@@ -166,7 +166,7 @@ $ PEBBLE_PHONE=<phone ip> zig build upload
 
 ## Pebble C API
 
-zig-pebble-sdk injects the [Pebble C API](https://developer.rebble.io/docs/c/)
+zig-pebble-sdk injects the [Pebble C API](https://developer.repebble.com/docs/c/)
 into applications as an import under the name `pebble`.
 
 ```zig
@@ -184,7 +184,7 @@ The translated Pebble C API can be inspected in the Zig cache with: `less $(find
 
 The `.pebble` substructure in the options of
 `pebble_sdk.addPebbleApplication()` mirrors the JSON [Pebble App
-Metadata](https://developer.rebble.io/guides/tools-and-resources/app-metadata/).
+Metadata](https://developer.repebble.com/guides/tools-and-resources/app-metadata/).
 See its [definition](build.zig#L409-L428) for an exhaustive list of options.
 
 The `uuid` field should be unique for every application, and can be generated
