@@ -15,6 +15,7 @@ const PebblePlatformParameters = struct {
     MAX_WORKER_MEMORY_SIZE: usize,
     MAX_RESOURCES_SIZE_APPSTORE: usize,
     MAX_RESOURCES_SIZE: usize,
+    MAX_FONT_GLYPH_SIZE: usize,
     DEFINES: []const []const u8,
 };
 
@@ -25,6 +26,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x20000,
         .MAX_RESOURCES_SIZE = 0x80000,
+        .MAX_FONT_GLYPH_SIZE = 256,
         .DEFINES = &.{ "PBL_PLATFORM_APLITE", "PBL_BW", "PBL_RECT", "PBL_COMPASS", "PBL_DISPLAY_WIDTH=144", "PBL_DISPLAY_HEIGHT=168" },
     },
     .basalt = .{
@@ -33,6 +35,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x40000,
         .MAX_RESOURCES_SIZE = 0x100000,
+        .MAX_FONT_GLYPH_SIZE = 256,
         .DEFINES = &.{ "PBL_PLATFORM_BASALT", "PBL_COLOR", "PBL_RECT", "PBL_MICROPHONE", "PBL_SMARTSTRAP", "PBL_HEALTH", "PBL_COMPASS", "PBL_SMARTSTRAP_POWER", "PBL_DISPLAY_WIDTH=144", "PBL_DISPLAY_HEIGHT=168" },
     },
     .chalk = .{
@@ -41,6 +44,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x40000,
         .MAX_RESOURCES_SIZE = 0x100000,
+        .MAX_FONT_GLYPH_SIZE = 256,
         .DEFINES = &.{ "PBL_PLATFORM_CHALK", "PBL_COLOR", "PBL_ROUND", "PBL_MICROPHONE", "PBL_SMARTSTRAP", "PBL_HEALTH", "PBL_COMPASS", "PBL_SMARTSTRAP_POWER", "PBL_DISPLAY_WIDTH=180", "PBL_DISPLAY_HEIGHT=180" },
     },
     .diorite = .{
@@ -49,6 +53,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x40000,
         .MAX_RESOURCES_SIZE = 0x100000,
+        .MAX_FONT_GLYPH_SIZE = 256,
         .DEFINES = &.{ "PBL_PLATFORM_DIORITE", "PBL_BW", "PBL_RECT", "PBL_MICROPHONE", "PBL_HEALTH", "PBL_SMARTSTRAP", "PBL_DISPLAY_WIDTH=144", "PBL_DISPLAY_HEIGHT=168" },
     },
     .emery = .{
@@ -57,6 +62,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x40000,
         .MAX_RESOURCES_SIZE = 0x100000,
+        .MAX_FONT_GLYPH_SIZE = 512,
         .DEFINES = &.{ "PBL_PLATFORM_EMERY", "PBL_COLOR", "PBL_RECT", "PBL_MICROPHONE", "PBL_SMARTSTRAP", "PBL_HEALTH", "PBL_SMARTSTRAP_POWER", "PBL_COMPASS", "PBL_DISPLAY_WIDTH=200", "PBL_DISPLAY_HEIGHT=228" },
     },
     .flint = .{
@@ -65,6 +71,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x40000,
         .MAX_RESOURCES_SIZE = 0x100000,
+        .MAX_FONT_GLYPH_SIZE = 256,
         .DEFINES = &.{ "PBL_PLATFORM_FLINT", "PBL_BW", "PBL_RECT", "PBL_MICROPHONE", "PBL_HEALTH", "PBL_COMPASS", "PBL_DISPLAY_WIDTH=144", "PBL_DISPLAY_HEIGHT=168" },
     },
     .gabbro = .{
@@ -73,6 +80,7 @@ const PEBBLE_PLATFORMS = std.EnumMap(PebblePlatform, PebblePlatformParameters).i
         .MAX_WORKER_MEMORY_SIZE = 0x2800,
         .MAX_RESOURCES_SIZE_APPSTORE = 0x40000,
         .MAX_RESOURCES_SIZE = 0x100000,
+        .MAX_FONT_GLYPH_SIZE = 512,
         .DEFINES = &.{ "PBL_PLATFORM_GABBRO", "PBL_COLOR", "PBL_ROUND", "PBL_MICROPHONE", "PBL_HEALTH", "PBL_COMPASS", "PBL_DISPLAY_WIDTH=260", "PBL_DISPLAY_HEIGHT=260" },
     },
 });
@@ -559,7 +567,25 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
         const resources_file = pack_resources_step.addOutputFileArg(b.fmt("{s}_resources.pbpack", .{options.name}));
         for (options.pebble.resources.media) |resource| {
             if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, 1, platform)) continue;
-            pack_resources_step.addFileArg(b.path(b.pathJoin(&.{ "resources", resource.file() })));
+
+            switch (resource) {
+                .font => |font| {
+                    // Convert ttf font into Pebble font format
+                    const convert_font_step = b.addSystemCommand(&.{ "uv", "tool", "run", "--from", "pebble-tool", "python", "-c", "import sys; from font.fontgen import Font, MAX_GLYPHS; import re; height = re.search(r'\\d+', sys.argv[3]); height is None and (_ for _ in ()).throw(ValueError(f'Missing height in font name \"{sys.argv[3]}\"')); font = Font(sys.argv[2], int(height[0]), MAX_GLYPHS, int(sys.argv[4]), False); font.set_regex_filter(sys.argv[5]) if len(sys.argv) > 5 else None; font.build_tables(); open(sys.argv[1], 'wb').write(font.bitstring())" });
+                    convert_font_step.setEnvironmentVariable("PYTHONPATH", b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/tools" }));
+                    const pebble_font_file = convert_font_step.addOutputFileArg(b.fmt("{s}.reso", .{font.name}));
+                    convert_font_step.addFileArg(b.path(b.pathJoin(&.{ "resources", font.file })));
+                    convert_font_step.addArg(font.name);
+                    convert_font_step.addArg(b.fmt("{d}", .{PEBBLE_PLATFORMS.getAssertContains(platform).MAX_FONT_GLYPH_SIZE}));
+                    if (font.characterRegex) |characterRegex| convert_font_step.addArg(characterRegex);
+                    pack_resources_step.addFileArg(pebble_font_file);
+                    pack_resources_step.step.dependOn(&convert_font_step.step);
+                },
+                else => {
+                    // Other resource types get packed directly
+                    pack_resources_step.addFileArg(b.path(b.pathJoin(&.{ "resources", resource.file() })));
+                },
+            }
         }
         b.getInstallStep().dependOn(&b.addInstallFile(resources_file, b.fmt("{s}/{s}_resources.pbpack", .{ @tagName(platform), options.name })).step);
 
