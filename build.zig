@@ -613,4 +613,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
     run_upload_step.addArg(b.getInstallPath(.prefix, b.fmt("{s}.pbw", .{options.name})));
     run_upload_step.step.dependOn(b.getInstallStep());
     upload_step.dependOn(&run_upload_step.step);
+    if (b.args) |args| {
+        run_upload_step.addArgs(args);
+    }
 }
