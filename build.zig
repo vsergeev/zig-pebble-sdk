@@ -596,6 +596,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
 
         // Inject metadata into binary
         const inject_metadata_step = b.addSystemCommand(&.{ "uv", "tool", "run", "--from", "pebble-tool", "python", "-c", "import sys; import time; import shutil; from inject_metadata import inject_metadata; shutil.copy(sys.argv[1], sys.argv[4]); inject_metadata(sys.argv[4], sys.argv[2], sys.argv[3], int(time.time()))" });
+        inject_metadata_step.addPathDir(paths.toolchain_bin_path);
         inject_metadata_step.setEnvironmentVariable("PYTHONPATH", b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/tools" }));
         inject_metadata_step.addFileArg(raw_bin_file);
         inject_metadata_step.addFileArg(exe.getEmittedBin());
