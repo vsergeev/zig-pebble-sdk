@@ -162,6 +162,11 @@ fn pebble_header_fixup(b: *std.Build, pebble_include_path: []const u8) []const u
         \\  TupleType type:8;
     , "  uint8_t type;") catch @panic("OOM");
 
+    // Add packed alignment to Tuple value union type
+    pebble_header = std.mem.replaceOwned(u8, b.allocator, pebble_header,
+        \\  } value[];
+    , "  } __attribute__((__packed__)) value[];") catch @panic("OOM");
+
     return pebble_header;
 }
 
