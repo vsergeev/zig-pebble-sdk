@@ -198,7 +198,7 @@ zig-pebble-sdk code generates the IDs for message keys, resources, and
 published media and injects it into applications as an import under the name
 `pebble_appids`. This module exports `MESSAGE_KEYS`, `RESOURCE_IDS`, and
 `PUBLISHED_IDS`, which are `enum(u32)` types containing the mapping of names to
-IDs. For example, the ID of a resource named `IMAGE_FISH` can be accessed with
+IDs. For example, the ID of a resource named `IMAGE_FISH` can be looked up with
 `@import("pebble_appids").RESOURCE_IDS.IMAGE_FISH`.
 
 As a convenience, generated application IDs are available at
@@ -232,6 +232,14 @@ fn tick_handler(tick_time: ?*pebble.tm, units_changed: pebble.TimeUnits) callcon
 }
 ...
 pebble.tick_timer_service_subscribe(pebble.MINUTE_UNIT, tick_handler);
+```
+
+* Dctionary Tuple values can be accessed through dereference and the
+  code-generated `value()` getter:
+
+```
+const weather_temperature_tuple = pebble.dict_find(iterator, @intFromEnum(pebble_appids.MESSAGE_KEYS.WEATHER_TEMPERATURE)));
+const temperature: ?i32 = if (weather_temperature_tuple) |t| t.*.value().*.int32 else null;
 ```
 
 * Entry point `main()` must be exported: `export fn main() void { ... }`
