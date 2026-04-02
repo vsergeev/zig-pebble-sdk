@@ -1,3 +1,9 @@
+* v1.1.1 - 04/02/2026
+    * Fix fault on Dictionary Tuple value access.
+    * Fix missing toolchain bin path in inject_metadata_step build step.
+    * Contributors
+        * Mitchell (@mgerb) - 8382797
+
 * v1.1.0 - 03/25/2026
     * Add font generation for font resources.
     * Forward optional command-line positional arguments in `upload` step.
