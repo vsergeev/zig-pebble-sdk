@@ -326,6 +326,31 @@ fn pebble_appinfo_json_template(b: *std.Build, name: []const u8, metadata: Pebbl
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Crawl Sources Helper
+////////////////////////////////////////////////////////////////////////////////
+
+fn crawlSources(b: *std.Build, subdir: []const u8, extension: []const u8) !std.array_list.Managed(std.Build.LazyPath) {
+    var sources = std.array_list.Managed(std.Build.LazyPath).init(b.allocator);
+
+    var sources_dir = std.fs.cwd().openDir(subdir, .{ .iterate = true }) catch |err| switch (err) {
+        error.FileNotFound => return sources,
+        else => |e| return e,
+    };
+    defer sources_dir.close();
+
+    var sources_walk = try sources_dir.walk(b.allocator);
+    defer sources_walk.deinit();
+
+    while (try sources_walk.next()) |entry| {
+        if (entry.kind == .file and std.mem.endsWith(u8, entry.basename, extension)) {
+            try sources.append(b.path(b.pathJoin(&.{ subdir, entry.path })));
+        }
+    }
+
+    return sources;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Pebble Application Build Helper
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -426,7 +451,7 @@ pub const PebbleAppMetadata = struct {
     version: struct { major: u8, minor: u8 },
     sdkVersion: usize = 3,
     targetPlatforms: []const PebblePlatform,
-    enableMultiJS: bool = false,
+    enableMultiJS: bool = true,
     watchapp: struct {
         watchface: bool = false,
         hiddenApp: bool = false,
@@ -621,17 +646,34 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
     const appinfo_json_file = appinfo_json_step.add("appinfo.json", pebble_appinfo_json_template(b, options.name, options.pebble));
     b.getInstallStep().dependOn(&b.addInstallFile(appinfo_json_file, b.fmt("{s}_appinfo.json", .{options.name})).step);
 
-    // Package appinfo, binaries, and resources into pbw
-    const package_pbw_step = b.addSystemCommand(&.{ "uv", "tool", "run", "--from", "pebble-tool", "python", "-c", "import sys; import time; import json; from mkbundle import make_watchapp_bundle; make_watchapp_bundle(int(time.time()), sys.argv[1], [{'subfolder': sys.argv[i], 'sdk_version': dict(zip(['major','minor'], open(sys.argv[i+1], 'rb').read(80)[10:12])), 'watchapp': sys.argv[i+1], 'resources': sys.argv[i+2], 'worker_bin': None} for i in range(3, len(sys.argv), 3)], [], outfile=sys.argv[2])" });
+    // Bundle any PebbleKit JS sources
+    var bundle_pkjs_sources_step: ?*std.Build.Step.Run = null;
+    var bundle_pkjs_sources_dir: ?std.Build.LazyPath = null;
+    const pkjs_sources = crawlSources(b, "src/pkjs", ".js") catch |err| std.debug.panic("Error crawling pkjs sources: {s}", .{@errorName(err)});
+    if (pkjs_sources.items.len > 0) {
+        bundle_pkjs_sources_step = b.addSystemCommand(&.{ b.pathJoin(&.{ pebble_sdk_path, "node_modules/.bin/webpack" }), "--target", "node", "--devtool", "sourcemap", "--output-filename", "pebble-js-app.js", "--output-source-map-file", "pebble-js-app.js.map", "--output-path" });
+        bundle_pkjs_sources_dir = bundle_pkjs_sources_step.?.addOutputDirectoryArg("bundle");
+        bundle_pkjs_sources_step.?.addArg(b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/include/_pkjs_shared_additions.js" }));
+        for (pkjs_sources.items) |js_file| bundle_pkjs_sources_step.?.addFileArg(js_file);
+    }
+
+    // Package appinfo, binaries, resources, and js into pbw
+    const package_pbw_step = b.addSystemCommand(&.{ "uv", "tool", "run", "--from", "pebble-tool", "python", "-c", "import sys; import time; import json; from mkbundle import make_watchapp_bundle; make_watchapp_bundle(int(time.time()), sys.argv[1], [{'subfolder': sys.argv[i], 'sdk_version': dict(zip(['major','minor'], open(sys.argv[i+1], 'rb').read(80)[10:12])), 'watchapp': sys.argv[i+1], 'resources': sys.argv[i+2], 'worker_bin': None} for i in range(4, 4 + 3 * int(sys.argv[3]), 3)], sys.argv[4 + 3 * int(sys.argv[3]):], outfile=sys.argv[2])" });
     package_pbw_step.setEnvironmentVariable("PYTHONPATH", b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/tools" }));
     package_pbw_step.addFileArg(appinfo_json_file);
     const pbw_file = package_pbw_step.addOutputFileArg(b.fmt("{s}.pbw", .{options.name}));
+    package_pbw_step.addArg(std.fmt.allocPrint(b.allocator, "{d}", .{pebble_app_artifacts.items.len}) catch @panic("OOM"));
     for (pebble_app_artifacts.items) |artifact| {
         package_pbw_step.addArg(@tagName(artifact.platform));
         package_pbw_step.addFileArg(artifact.bin_file);
         package_pbw_step.addFileArg(artifact.resources_file);
         package_pbw_step.step.dependOn(artifact.bin_step);
         package_pbw_step.step.dependOn(artifact.resources_step);
+    }
+    if (bundle_pkjs_sources_step) |bundle_step| {
+        package_pbw_step.addFileArg(bundle_pkjs_sources_dir.?.path(b, "pebble-js-app.js"));
+        package_pbw_step.addFileArg(bundle_pkjs_sources_dir.?.path(b, "pebble-js-app.js.map"));
+        package_pbw_step.step.dependOn(&bundle_step.step);
     }
     package_pbw_step.step.dependOn(&appinfo_json_step.step);
     b.getInstallStep().dependOn(&b.addInstallFile(pbw_file, b.fmt("{s}.pbw", .{options.name})).step);
