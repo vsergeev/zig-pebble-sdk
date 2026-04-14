@@ -185,7 +185,7 @@ The translated Pebble C API can be inspected in the Zig cache with: `less $(find
 The `.pebble` substructure in the options of
 `pebble_sdk.addPebbleApplication()` mirrors the JSON [Pebble App
 Metadata](https://developer.repebble.com/guides/tools-and-resources/app-metadata/).
-See its [definition](build.zig#L409-L428) for an exhaustive list of options.
+See its [definition](build.zig#L447-L466) for an exhaustive list of options.
 
 The `uuid` field should be unique for every application, and can be generated
 with the `uuidgen` command.
@@ -234,10 +234,10 @@ fn tick_handler(tick_time: ?*pebble.tm, units_changed: pebble.TimeUnits) callcon
 pebble.tick_timer_service_subscribe(pebble.MINUTE_UNIT, tick_handler);
 ```
 
-* Dctionary Tuple values can be accessed through dereference and the
+* Dictionary Tuple values can be accessed through dereference and the
   code-generated `value()` getter:
 
-```
+```zig
 const weather_temperature_tuple = pebble.dict_find(iterator, @intFromEnum(pebble_appids.MESSAGE_KEYS.WEATHER_TEMPERATURE)));
 const temperature: ?i32 = if (weather_temperature_tuple) |t| t.*.value().*.int32 else null;
 ```
