@@ -204,6 +204,11 @@ IDs. For example, the ID of a resource named `IMAGE_FISH` can be looked up with
 As a convenience, generated application IDs are available at
 `zig-out/<platform>/<name>_appids.gen.zig` after building.
 
+## PebbleKit JS Sources
+
+PebbleKit JS sources detected in the `src/pkjs/` project subdirectory are
+automatically bundled with `webpack` and packaged into the pbw.
+
 ## Important Notes
 
 * `GRect(x, y, w, h)`, and similar convenience macros that share the name of
