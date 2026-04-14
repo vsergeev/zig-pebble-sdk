@@ -1,3 +1,6 @@
+* v1.2.0 - 04/14/2026
+    * Add bundling and packaging of PebbleKit JS sources.
+
 * v1.1.1 - 04/02/2026
     * Fix fault on Dictionary Tuple value access.
     * Fix missing toolchain bin path in inject_metadata_step build step.
