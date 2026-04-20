@@ -652,6 +652,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
     const pkjs_sources = crawlSources(b, "src/pkjs", ".js") catch |err| std.debug.panic("Error crawling pkjs sources: {s}", .{@errorName(err)});
     if (pkjs_sources.items.len > 0) {
         bundle_pkjs_sources_step = b.addSystemCommand(&.{ b.pathJoin(&.{ pebble_sdk_path, "node_modules/.bin/webpack" }), "--target", "node", "--devtool", "sourcemap", "--output-filename", "pebble-js-app.js", "--output-source-map-file", "pebble-js-app.js.map", "--output-path" });
+        bundle_pkjs_sources_step.?.setCwd(b.path("."));
         bundle_pkjs_sources_dir = bundle_pkjs_sources_step.?.addOutputDirectoryArg("bundle");
         bundle_pkjs_sources_step.?.addArg(b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/include/_pkjs_shared_additions.js" }));
         for (pkjs_sources.items) |js_file| bundle_pkjs_sources_step.?.addFileArg(js_file);
