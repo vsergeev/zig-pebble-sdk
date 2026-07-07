@@ -181,9 +181,10 @@ fn pebble_header_fixup(b: *std.Build, pebble_include_path: []const u8) []const u
 
 fn pebble_linker_script_template(b: *std.Build, pebble_linker_script_template_path: []const u8, platform: PebblePlatform) []const u8 {
     const linker_script = std.Io.Dir.cwd().readFileAlloc(b.graph.io, pebble_linker_script_template_path, b.allocator, .limited(1 << 20)) catch @panic("OOM");
+    const linker_script_with_got = std.mem.replaceOwned(u8, b.allocator, linker_script, "    .bss :", "    .got :\n    {\n        *(.got)\n        *(.got.*)\n    } > APP\n\n    .bss :") catch @panic("OOM");
 
     // Template max app memory size
-    return std.mem.replaceOwned(u8, b.allocator, linker_script, "@MAX_APP_MEMORY_SIZE@", b.fmt("0x{X}", .{PEBBLE_PLATFORMS.getAssertContains(platform).MAX_APP_MEMORY_SIZE})) catch @panic("OOM");
+    return std.mem.replaceOwned(u8, b.allocator, linker_script_with_got, "@MAX_APP_MEMORY_SIZE@", b.fmt("0x{X}", .{PEBBLE_PLATFORMS.getAssertContains(platform).MAX_APP_MEMORY_SIZE})) catch @panic("OOM");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
