@@ -4,7 +4,7 @@
     .dependencies = .{
         .pebble_sdk = .{
             .url = "..",
-            .hash = "pebble_sdk-1.4.1-rN96oAqwAADGYGZQqitg9L3V3RQ0oILxTHdAyxwS8Kuw",
+            .hash = "pebble_sdk-1.4.2-rN96oAiyAAA49kpaaMHkZoFSzaraNAGEtzN5wd1AI2hg",
         },
     },
     .minimum_zig_version = "0.16.0",
