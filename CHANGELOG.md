@@ -1,3 +1,9 @@
+* v1.4.2 - 09/15/2026
+    * Improve error message when pebble header is not found in the Pebble SDK
+      path.
+    * Contributors
+        * Aurélien Cibrario (@Yinameah) - 1ac372b
+
 * v1.4.1 - 07/09/2026
     * Fix fault caused by Global Offset Table (GOT) section placement
       overlapping with the heap.
