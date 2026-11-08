@@ -141,10 +141,10 @@ fn pebble_header_fixup(b: *std.Build, pebble_include_path: []const u8) []const u
         \\typedef union GColor8 {
         \\  uint8_t argb;
         \\  struct {
-        \\    uint8_t b:2; //!< Blue
-        \\    uint8_t g:2; //!< Green
-        \\    uint8_t r:2; //!< Red
-        \\    uint8_t a:2; //!< Alpha. 3 = 100% opaque, 2 = 66% opaque, 1 = 33% opaque, 0 = transparent.
+        \\    uint8_t b : 2; //!< Blue
+        \\    uint8_t g : 2; //!< Green
+        \\    uint8_t r : 2; //!< Red
+        \\    uint8_t a : 2; //!< Alpha. 3 = 100% opaque, 2 = 66% opaque, 1 = 33% opaque, 0 = transparent.
         \\  };
         \\} GColor8;
     , "typedef struct GColor8 { uint8_t argb; } GColor8;") catch @panic("OOM");
@@ -159,20 +159,20 @@ fn pebble_header_fixup(b: *std.Build, pebble_include_path: []const u8) []const u
 
     // Replace bitfields with uint8_t in HealthMinuteData
     pebble_header = std.mem.replaceOwned(u8, b.allocator, pebble_header,
-        \\  bool is_invalid: 1;         //!< `true` if the item doesn't represents actual data
-        \\                              //!< and should be ignored.
-        \\  AmbientLightLevel light: 3; //!< Instantaneous light level during this minute.
-        \\  uint8_t padding: 4;
+        \\  bool is_invalid : 1;         //!< `true` if the item doesn't represents actual data
+        \\                               //!< and should be ignored.
+        \\  AmbientLightLevel light : 3; //!< Instantaneous light level during this minute.
+        \\  uint8_t padding : 4;
     , "  uint8_t is_invalid_and_light_level;") catch @panic("OOM");
 
     // Replace type bitfield with uint8_t in Tuple
     pebble_header = std.mem.replaceOwned(u8, b.allocator, pebble_header,
-        \\  TupleType type:8;
+        \\  TupleType type : 8;
     , "  uint8_t type;") catch @panic("OOM");
 
     // Replace type bitfield with uint8_t in TouchEvent
     pebble_header = std.mem.replaceOwned(u8, b.allocator, pebble_header,
-        \\  TouchEventType type:8;
+        \\  TouchEventType type : 8;
     , "  uint8_t type;") catch @panic("OOM");
 
     // Add packed alignment to Tuple value union type
