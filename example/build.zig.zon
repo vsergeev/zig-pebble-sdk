@@ -3,8 +3,7 @@
     .version = "0.0.1",
     .dependencies = .{
         .pebble_sdk = .{
-            .url = "..",
-            .hash = "pebble_sdk-1.4.2-rN96oAiyAAA49kpaaMHkZoFSzaraNAGEtzN5wd1AI2hg",
+            .path = "..",
         },
     },
     .minimum_zig_version = "0.16.0",
