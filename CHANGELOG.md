@@ -1,3 +1,9 @@
+* v1.4.3 - 11/08/2026
+    * Fix whitespace in Pebble header substitutions for latest SDK version
+      (4.44).
+    * Fix `large` field name in `timeline` substructure of
+      `PebbleAppPublishedMedia`.
+
 * v1.4.2 - 09/15/2026
     * Improve error message when pebble header is not found in the Pebble SDK
       path.
