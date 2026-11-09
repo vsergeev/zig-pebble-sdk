@@ -1,4 +1,4 @@
-// zig-pebble-sdk v1.0.0
+// zig-pebble-sdk v1.5.0
 // https://github.com/vsergeev/zig-pebble-sdk
 
 const std = @import("std");
