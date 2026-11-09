@@ -418,7 +418,7 @@ pub const PebbleAppPublishedMedia = struct {
     timeline: ?struct {
         tiny: []const u8,
         small: []const u8,
-        lage: []const u8,
+        large: []const u8,
     } = null,
 
     pub fn jsonStringify(value: @This(), jws: anytype) !void {
