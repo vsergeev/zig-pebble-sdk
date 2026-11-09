@@ -1,3 +1,6 @@
+* v1.5.0 - 11/08/2026
+    * Migrate to Zig 0.17.
+
 * v1.4.3 - 11/08/2026
     * Fix whitespace in Pebble header substitutions for latest SDK version
       (4.44).
