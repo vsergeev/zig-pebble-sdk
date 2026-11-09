@@ -10,11 +10,11 @@ var s_bitmap: ?*pebble.GBitmap = null;
 var s_bitmap_layer: ?*pebble.BitmapLayer = null;
 
 fn tick_handler(tick_time: ?*pebble.tm, _: pebble.TimeUnits) callconv(.c) void {
-    pebble.text_layer_set_text(s_time_layer, std.fmt.bufPrintZ(&s_time_buf, "{d:0>2}:{d:0>2}:{d:0>2}", .{
+    pebble.text_layer_set_text(s_time_layer, std.mem.printSentinel(&s_time_buf, "{d:0>2}:{d:0>2}:{d:0>2}", .{
         @as(usize, @intCast(tick_time.?.tm_hour)),
         @as(usize, @intCast(tick_time.?.tm_min)),
         @as(usize, @intCast(tick_time.?.tm_sec)),
-    }) catch unreachable);
+    }, 0) catch unreachable);
 }
 
 fn window_load(window: ?*pebble.Window) callconv(.c) void {

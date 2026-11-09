@@ -6,7 +6,7 @@
             .path = "..",
         },
     },
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .paths = .{""},
     .fingerprint = 0x371b1d9e2ef4a393,
 }

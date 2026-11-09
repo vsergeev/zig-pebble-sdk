@@ -1,6 +1,6 @@
 # Watchface Example
 
-An Pebble watchface example that uses an image resource.
+A Pebble watchface example that uses an image resource.
 
 Build watchface:
 
