@@ -136,7 +136,7 @@ fn pebble_header_fixup(b: *std.Build, pebble_include_path: []const u8) []const u
 
     // Bitfields need to be removed, as they are currently unsupported by Zig Translate C
 
-    // Remove RBGA bitfield in union GColor8
+    // Remove RGBA bitfield in union GColor8
     pebble_header = std.mem.replaceOwned(u8, b.allocator, pebble_header,
         \\typedef union GColor8 {
         \\  uint8_t argb;
@@ -210,7 +210,7 @@ fn pebble_appids_zig_template(b: *std.Build, platform: PebblePlatform, metadata:
     var resource_ids = std.array_list.Managed(u8).init(b.allocator);
     var id: usize = 1;
     for (metadata.resources.media) |resource| {
-        if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, 1, platform)) continue;
+        if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, platform, 1)) continue;
         resource_ids.appendSlice(b.fmt("    {s} = {d},\n", .{ resource.name(), id })) catch @panic("OOM");
         id += 1;
     }
@@ -241,7 +241,7 @@ fn pebble_menu_icon_resource_id(platform: PebblePlatform, metadata: PebbleAppMet
     // Find resource id of bitmap with menuIcon set to true
     var id: usize = 1;
     for (metadata.resources.media) |resource| {
-        if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, 1, platform)) continue;
+        if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, platform, 1)) continue;
         switch (resource) {
             .bitmap => |bitmap| if (bitmap.menuIcon) |menuIcon| if (menuIcon) return id,
             else => {},
@@ -281,8 +281,8 @@ fn pebble_appinfo_zig_template(b: *std.Build, platform: PebblePlatform, metadata
         \\    .load_size = 0xb6b6,
         \\    .offset = 0xb6b6b6b6,
         \\    .crc = 0xb6b6b6b6,
-        \\    .name = ("{s}" ++ [_]u8{{0}} ** (pebble_process_info.PROCESS_NAME_BYTES - {d})).*,
-        \\    .company = ("{s}" ++ [_]u8{{0}} ** (pebble_process_info.COMPANY_NAME_BYTES - {d})).*,
+        \\    .name = ("{s}" ++ @as([pebble_process_info.PROCESS_NAME_BYTES - {d}]u8, @splat(0))).*,
+        \\    .company = ("{s}" ++ @as([pebble_process_info.COMPANY_NAME_BYTES - {d}]u8, @splat(0))).*,
         \\    .icon_resource_id = {d},
         \\    .sym_table_addr = 0xA7A7A7A7,
         \\    .flags = {s},
@@ -398,10 +398,10 @@ pub const PebbleAppMedia = union(enum) {
                 try jws.beginObject();
                 try jws.objectField("type");
                 try jws.write(tag);
-                inline for (std.meta.fields(@TypeOf(resource))) |Field| {
-                    if (@typeInfo(Field.type) != .optional or @field(resource, Field.name) != null) {
-                        try jws.objectField(Field.name);
-                        try jws.write(@field(resource, Field.name));
+                inline for (@typeInfo(@TypeOf(resource)).@"struct".field_names, @typeInfo(@TypeOf(resource)).@"struct".field_types) |field_name, field_type| {
+                    if (@typeInfo(field_type) != .optional or @field(resource, field_name) != null) {
+                        try jws.objectField(field_name);
+                        try jws.write(@field(resource, field_name));
                     }
                 }
                 try jws.endObject();
@@ -423,10 +423,10 @@ pub const PebbleAppPublishedMedia = struct {
 
     pub fn jsonStringify(value: @This(), jws: anytype) !void {
         try jws.beginObject();
-        inline for (std.meta.fields(@This())) |Field| {
-            if (@typeInfo(Field.type) != .optional or @field(value, Field.name) != null) {
-                try jws.objectField(Field.name);
-                try jws.write(@field(value, Field.name));
+        inline for (@typeInfo(@This()).@"struct".field_names, @typeInfo(@This()).@"struct".field_types) |field_name, field_type| {
+            if (@typeInfo(field_type) != .optional or @field(value, field_name) != null) {
+                try jws.objectField(field_name);
+                try jws.write(@field(value, field_name));
             }
         }
         try jws.endObject();
@@ -506,7 +506,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
         translate_pebble.link_libc = false;
 
         // Create pebble module with pebble static library
-        const translate_pebble_mod = translate_pebble.addModule("pebble");
+        const translate_pebble_mod = translate_pebble.createModule();
         translate_pebble_mod.addObjectFile(.{ .cwd_relative = paths.pebble_static_library_path });
 
         // Translate pebble_process_info.h
@@ -519,7 +519,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
         translate_pebble_process_info.link_libc = false;
 
         // Create pebble_process_info module
-        const translate_pebble_process_info_mod = translate_pebble_process_info.addModule("pebble_process_info");
+        const translate_pebble_process_info_mod = translate_pebble_process_info.createModule();
 
         // Code generate pebble_appids module
         const pebble_appids_mod = b.createModule(.{
@@ -573,7 +573,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
         exe.root_module.addObject(appinfo_object);
         exe.setLinkerScript(linker_script);
         exe.entry = .{ .symbol_name = "main" };
-        b.build_id = .sha1;
+        exe.build_id = .sha1;
         exe.step.dependOn(&linker_script_step.step);
         b.getInstallStep().dependOn(&b.addInstallArtifact(exe, .{ .dest_dir = .{ .override = .prefix }, .dest_sub_path = b.fmt("{s}/{s}.elf", .{ @tagName(platform), options.name }) }).step);
 
@@ -588,7 +588,7 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
         pack_resources_step.setEnvironmentVariable("PYTHONPATH", b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/tools" }));
         const resources_file = pack_resources_step.addOutputFileArg(b.fmt("{s}_resources.pbpack", .{options.name}));
         for (options.pebble.resources.media) |resource| {
-            if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, 1, platform)) continue;
+            if (resource.targetPlatforms()) |targetPlatforms| if (!std.mem.containsAtLeastScalar(PebblePlatform, targetPlatforms, platform, 1)) continue;
 
             switch (resource) {
                 .font => |font| {
@@ -613,7 +613,6 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
 
         // Inject metadata into binary
         const inject_metadata_step = b.addSystemCommand(&.{ "uv", "tool", "run", "--from", "pebble-tool", "python", "-c", "import sys; import time; import shutil; from inject_metadata import inject_metadata; shutil.copy(sys.argv[1], sys.argv[4]); inject_metadata(sys.argv[4], sys.argv[2], sys.argv[3], int(time.time()))" });
-        inject_metadata_step.addPathDir(paths.toolchain_bin_path);
         inject_metadata_step.setEnvironmentVariable("PYTHONPATH", b.pathJoin(&.{ pebble_sdk_path, "sdk-core/pebble/common/tools" }));
         inject_metadata_step.addFileArg(raw_bin_file);
         inject_metadata_step.addFileArg(exe.getEmittedBin());
@@ -670,10 +669,8 @@ pub fn addPebbleApplication(b: *std.Build, options: PebbleApplicationOptions) vo
     // Top-level step to upload to emulator or watch
     const upload_step = b.step("upload", "Upload the Pebble App to emulator or watch");
     const run_upload_step = b.addSystemCommand(&.{ "uv", "tool", "run", "--from", "pebble", "pebble", "install" });
-    run_upload_step.addArg(b.getInstallPath(.prefix, b.fmt("{s}.pbw", .{options.name})));
+    run_upload_step.addFileArg(.{ .relative = .{ .base = .install_prefix, .sub_path = b.fmt("{s}.pbw", .{options.name}) } });
+    run_upload_step.addPassthruArgs();
     run_upload_step.step.dependOn(b.getInstallStep());
     upload_step.dependOn(&run_upload_step.step);
-    if (b.args) |args| {
-        run_upload_step.addArgs(args);
-    }
 }

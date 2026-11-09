@@ -7,7 +7,7 @@ well as the Zig standard library.
 
 See the included [example watchface](example/) or follow the quickstart below.
 
-zig-pebble-sdk requires Zig version 0.16 and the Pebble SDK.
+zig-pebble-sdk requires Zig version 0.17 and the Pebble SDK.
 
 ## Quickstart
 
@@ -50,7 +50,7 @@ pub fn build(b: *std.Build) !void {
             .watchapp = .{
                 .watchface = true,
             },
-          },
+        },
         .root_source_file = b.path("src/main.zig"),
         .optimize = .ReleaseSmall,
     });
@@ -122,9 +122,6 @@ export fn main() void {
 $ zig build
 ```
 
-The `ld.lld: warning: address (0x82) of section .note.gnu.build-id is not a
-multiple of alignment (4)` warning can be safely ignored.
-
 The resulting `zig-out/watchface_example.pbw` can be installed to a Pebble
 watch or published to the [Pebble](https://appstore-api.repebble.com/dashboard) or [Rebble](https://developer.rebble.io/guides/appstore-publishing/) app store.
 
@@ -193,7 +190,7 @@ The translated Pebble C API can be inspected in the Zig cache with: `less $(find
 The `.pebble` substructure in the options of
 `pebble_sdk.addPebbleApplication()` mirrors the JSON [Pebble App
 Metadata](https://developer.repebble.com/guides/tools-and-resources/app-metadata/).
-See its [definition](build.zig#L427-L446) for an exhaustive list of options.
+See its [definition](build.zig#L436-L455) for an exhaustive list of options.
 
 The `uuid` field should be unique for every application, and can be generated
 with the `uuidgen` command.
@@ -237,7 +234,7 @@ example of a TypeScript + esbuild build flow.
 * Zig does not currently support translating bitfields in C header files, so
   for certain Pebble C API types, only aggregate 8-bit types are available in
   place of their bitfield components:
-    * `GColor` type lacks `b`, `g`, `r`, `a,` fields, and only has the 8-bit
+    * `GColor` type lacks `b`, `g`, `r`, `a` fields, and only has the 8-bit
       `argb` field.
     * `HealthMinuteData` lacks `is_invalid`, `light`, `padding` fields, and
       instead has an 8-bit `is_invalid_and_light_level` field.
@@ -261,7 +258,7 @@ pebble.tick_timer_service_subscribe(pebble.MINUTE_UNIT, tick_handler);
   code-generated `value()` getter:
 
 ```zig
-const weather_temperature_tuple = pebble.dict_find(iterator, @intFromEnum(pebble_appids.MESSAGE_KEYS.WEATHER_TEMPERATURE)));
+const weather_temperature_tuple = pebble.dict_find(iterator, @intFromEnum(pebble_appids.MESSAGE_KEYS.WEATHER_TEMPERATURE));
 const temperature: ?i32 = if (weather_temperature_tuple) |t| t.*.value().*.int32 else null;
 ```
 

@@ -1,7 +1,7 @@
 .{
     .name = .pebble_sdk,
     .version = "1.4.3",
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .paths = .{
         "build.zig",
         "build.zig.zon",
